@@ -1,4 +1,7 @@
 <launch>
+  <include file="$(find arpg_husky)/launch/hosts.launch"/>
+  <arg name="machine" default="$(env ROS_HOSTNAME)"/>
+
   <arg name="serial_no"           default=""/>
   <arg name="json_file_path"      default=""/>
   <arg name="camera"              default="camera"/>
@@ -46,9 +49,10 @@
   <arg name="linear_accel_cov"      default="0.01"/>
   <arg name="initial_reset"         default="false"/>
   <arg name="unite_imu_method"      default=""/>
-  
+
   <group ns="$(arg camera)">
     <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
+      <arg name="machine"                  value="$(arg machine)"/>
       <arg name="tf_prefix"                value="$(arg tf_prefix)"/>
       <arg name="serial_no"                value="$(arg serial_no)"/>
       <arg name="json_file_path"           value="$(arg json_file_path)"/>
