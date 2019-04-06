@@ -1,5 +1,5 @@
 <launch>
-  <include file="$(find arpg_husky)/launch/hosts.launch"/>
+  <include file="$(find marble)/launch/hosts.launch"/>
   <arg name="machine" default="$(env ROS_HOSTNAME)"/>
 
   <arg name="manager"             default="realsense2_camera_manager"/>

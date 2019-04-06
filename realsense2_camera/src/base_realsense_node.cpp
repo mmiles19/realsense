@@ -166,13 +166,13 @@ void BaseRealSenseNode::setupErrorCallback()
     {
         s.set_notifications_callback([&](const rs2::notification& n)
         {
-            std::vector<std::string> error_strings({"RT IC2 Config error", 
+            std::vector<std::string> error_strings({"RT IC2 Config error",
                                                     "Motion Module force pause"});
             if (n.get_severity() >= RS2_LOG_SEVERITY_ERROR)
             {
                 ROS_WARN_STREAM("Hardware Notification:" << n.get_description() << "," << n.get_timestamp() << "," << n.get_severity() << "," << n.get_category());
             }
-            if (error_strings.end() != find_if(error_strings.begin(), error_strings.end(), [&n] (std::string err) 
+            if (error_strings.end() != find_if(error_strings.begin(), error_strings.end(), [&n] (std::string err)
                                         {return (n.get_description().find(err) != std::string::npos); }))
             {
                 ROS_ERROR_STREAM("Hardware Reset is needed. use option: initial_reset:=true");
@@ -461,6 +461,7 @@ void BaseRealSenseNode::setupDevice()
         for(auto&& elem : _dev_sensors)
         {
             std::string module_name = elem.get_info(RS2_CAMERA_INFO_NAME);
+            ROS_INFO("[realsense] module_name: %s",module_name);
             if ("Stereo Module" == module_name)
             {
                 _sensors[DEPTH] = elem;
@@ -470,7 +471,9 @@ void BaseRealSenseNode::setupDevice()
                 {
                   const rs2::option_range range = _sensors[DEPTH].get_option_range(RS2_OPTION_LASER_POWER);
                   _laser_power = std::max(range.min, std::min(range.max, float(_laser_power)));
+                  ROS_INFO("[realsense] setting laser power to %d, range %d:%d",_laser_power,range.min,range.max);
                   _sensors[DEPTH].set_option(RS2_OPTION_LASER_POWER, _laser_power);
+                  // _sensors[DEPTH].set_option(RS2_OPTION_EMITTER_ENABLED, _laser_power > 0);
                   _sensors[DEPTH].set_option(RS2_OPTION_EMITTER_ENABLED, _laser_power > 0);
                 }
             }
@@ -968,7 +971,7 @@ void BaseRealSenseNode::imu_callback_sync(rs2::frame frame, imu_sync_method sync
 
         if (false == _intialize_time_base)
             break;
-    
+
         seq += 1;
         double elapsed_camera_ms = (/*ms*/ frame_time - /*ms*/ _camera_time_base) / 1000.0;
 
@@ -1391,7 +1394,7 @@ void BaseRealSenseNode::setupStreams()
                     unite_method_str = "LINEAR_INTERPOLATION";
                     expected_fps = 2 * std::min(_fps[GYRO], _fps[ACCEL]);
                 }
-                ROS_INFO_STREAM("Gyro and accelometer are enabled and combined to IMU message at " 
+                ROS_INFO_STREAM("Gyro and accelometer are enabled and combined to IMU message at "
                                  << expected_fps << " fps by method:" << unite_method_str);
                 sens.start(imu_callback_sync_inner);
             }
@@ -1690,7 +1693,7 @@ void BaseRealSenseNode::publishStaticTransforms()
         // const auto& ex = getRsExtrinsics(Gyro, DEPTH);
         // Currently, No extrinsics available:
         const rs2_extrinsics ex = {{1, 0, 0, 0, 1, 0, 0, 0, 1}, {0,0,0}};
-        
+
         auto Q = rotationMatrixToQuaternion(ex.rotation);
         Q = quaternion_optical * Q * quaternion_optical.inverse();
 
@@ -1708,7 +1711,7 @@ void BaseRealSenseNode::publishStaticTransforms()
         // const auto& ex = getRsExtrinsics(Accel, DEPTH);
         // Currently, No extrinsics available:
         const rs2_extrinsics ex = {{1, 0, 0, 0, 1, 0, 0, 0, 1}, {0,0,0}};
-        
+
         auto Q = rotationMatrixToQuaternion(ex.rotation);
         Q = quaternion_optical * Q * quaternion_optical.inverse();
 
@@ -1741,8 +1744,8 @@ void BaseRealSenseNode::publishPointCloud(rs2::points pc, const ros::Time& t, co
     if (use_texture)
     {
         std::set<rs2_format> available_formats{ rs2_format::RS2_FORMAT_RGB8, rs2_format::RS2_FORMAT_Y8 };
-        
-        texture_frame_itr = find_if(frameset.begin(), frameset.end(), [&texture_source_id, &available_formats] (rs2::frame f) 
+
+        texture_frame_itr = find_if(frameset.begin(), frameset.end(), [&texture_source_id, &available_formats] (rs2::frame f)
                                 {return (rs2_stream(f.get_profile().stream_type()) == texture_source_id) &&
                                             (available_formats.find(f.get_profile().format()) != available_formats.end()); });
         if (texture_frame_itr == frameset.end())
@@ -1791,7 +1794,7 @@ void BaseRealSenseNode::publishPointCloud(rs2::points pc, const ros::Time& t, co
     msg_pointcloud.is_dense = true;
 
     sensor_msgs::PointCloud2Modifier modifier(msg_pointcloud);
-    modifier.setPointCloud2FieldsByString(1, "xyz");    
+    modifier.setPointCloud2FieldsByString(1, "xyz");
 
     vertex = pc.get_vertices();
     if (use_texture)
@@ -2041,4 +2044,3 @@ bool BaseRealSenseNode::getEnabledProfile(const stream_index_pair& stream_index,
         profile =  *it;
         return true;
     }
-
